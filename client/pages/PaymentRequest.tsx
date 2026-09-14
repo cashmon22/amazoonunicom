@@ -19,7 +19,7 @@ import { useAuth } from "@/lib/auth";
 import {
   AuthenticatedVendorHeader,
   AuthenticatedVendorSidebar,
-  listAvailableDevices,
+  getAvailableDeviceById,
 } from "@/pages/TrustedVendor";
 import { vendorDevices, type VendorDevice } from "@shared/vendor-data";
 import type { PaymentRequest } from "@shared/payment-requests";
@@ -264,11 +264,9 @@ export default function PaymentRequest() {
       };
     }
 
-    void listAvailableDevices()
-      .then((devices) => {
-        if (isMounted) {
-          setDevice(devices.find((item) => item.id === deviceId) ?? null);
-        }
+    void getAvailableDeviceById(deviceId)
+      .then((databaseDevice) => {
+        if (isMounted) setDevice(databaseDevice);
       })
       .catch(() => {
         if (isMounted) setDevice(null);
