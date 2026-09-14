@@ -11,6 +11,9 @@ export type PaymentRequest = {
   stateProvince: string;
   postalCode: string;
   country: string;
+  bankName: string;
+  additionalNotes: string;
+  confirmation: boolean;
   deviceId: string;
   deviceName: string;
   deviceModel: string;
@@ -30,6 +33,7 @@ export type CreatePaymentRequestInput = {
   stateProvince: string;
   postalCode: string;
   country: string;
+  bankName: string;
   additionalNotes?: string;
   confirmation: boolean;
 };

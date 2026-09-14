@@ -49,7 +49,7 @@ function getAvailableDeviceImage(imagePath: string | null) {
   return publicUrl || neutralDevicePlaceholder;
 }
 
-async function listAvailableDevices(): Promise<VendorDevice[]> {
+export async function listAvailableDevices(): Promise<VendorDevice[]> {
   const { data, error } = await supabase
     .from("devices")
     .select("id,name,model,specifications,amount,status,image_url")

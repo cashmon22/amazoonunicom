@@ -19,6 +19,7 @@ import { useAuth } from "@/lib/auth";
 import {
   AuthenticatedVendorHeader,
   AuthenticatedVendorSidebar,
+  listAvailableDevices,
 } from "@/pages/TrustedVendor";
 import { vendorDevices, type VendorDevice } from "@shared/vendor-data";
 import type { PaymentRequest } from "@shared/payment-requests";
@@ -245,8 +246,37 @@ export default function PaymentRequest() {
   const email = session?.user.email ?? "";
 
   useEffect(() => {
+    let isMounted = true;
     const deviceId = searchParams.get("deviceId");
-    setDevice(vendorDevices.find((item) => item.id === deviceId) ?? null);
+    const staticDevice = vendorDevices.find((item) => item.id === deviceId);
+
+    if (staticDevice) {
+      setDevice(staticDevice);
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    setDevice(null);
+    if (!deviceId) {
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    void listAvailableDevices()
+      .then((devices) => {
+        if (isMounted) {
+          setDevice(devices.find((item) => item.id === deviceId) ?? null);
+        }
+      })
+      .catch(() => {
+        if (isMounted) setDevice(null);
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, [searchParams]);
 
   const amount = useMemo(() => (device ? formatPrice(device) : "—"), [device]);
@@ -284,6 +314,7 @@ export default function PaymentRequest() {
         stateProvince: form.stateProvince,
         postalCode: form.postalCode,
         country: form.country,
+        bankName: form.bankName,
         additionalNotes: form.additionalNotes || undefined,
         confirmation: form.confirmation,
       });
