@@ -117,7 +117,63 @@ function submissionToApplication(submission: FormspreeSubmission): AdminApplicat
   };
 }
 
-async function listApplications(req: Request, res: Parameters<RequestHandler>[1]) {
+async function listApplications(
+  req: Request,
+  res: Parameters<RequestHandler>[1],
+) {
+  const { data, error } = await supabase
+    .from("applications")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Failed to load applications:", error);
+    res.status(500).json({ error: "Unable to load applications." });
+    return null;
+  }
+
+  const search =
+    typeof req.query.search === "string"
+      ? req.query.search.trim().toLowerCase()
+      : "";
+
+  const status =
+    typeof req.query.status === "string" ? req.query.status : "";
+
+  const applications: AdminApplication[] = data
+    .map((item) => ({
+      id: item.id,
+      applicantName: `${item.first_name} ${item.last_name}`.trim(),
+      email: item.email,
+      phone: item.phone,
+      applicationDate: item.created_at,
+      status: "Under Review" as AdminApplicationStatus,
+      details: {
+        firstName: item.first_name,
+        lastName: item.last_name,
+        email: item.email,
+        phone: item.phone,
+        country: item.country,
+        timeZone: item.time_zone,
+        interests: item.assignment_categories
+          ? item.assignment_categories.split(", ")
+          : [],
+        hours: item.weekly_hours,
+        experience: item.previous_experience,
+        reason: item.motivation,
+        eligibility: [],
+      },
+    }))
+    .filter(
+      (application) =>
+        (!search ||
+          application.applicantName.toLowerCase().includes(search) ||
+          application.email.toLowerCase().includes(search)) &&
+        (!status || application.status === status),
+    );
+
+  return applications;
+}
   let submissions: FormspreeSubmission[];
   try {
     submissions = await listFormspreeSubmissions();
