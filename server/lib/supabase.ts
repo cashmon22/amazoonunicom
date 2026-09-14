@@ -1,4 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
+import dotenv from "dotenv";
+
+dotenv.config({ override: true });
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL;
 const supabasePublishableKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY;

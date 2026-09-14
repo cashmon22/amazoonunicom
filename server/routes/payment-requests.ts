@@ -47,6 +47,14 @@ function requireText(value: unknown) {
   return typeof value === "string" && value.trim().length > 0;
 }
 
+type PaymentDeviceSnapshot = {
+  id: string;
+  name: string;
+  model: string;
+  price: number | null;
+  currency: string;
+};
+
 export const createPaymentRequest: RequestHandler = async (req, res) => {
   const context = await getAuthenticatedUser(req, res);
   if (!context) return;
@@ -62,6 +70,7 @@ export const createPaymentRequest: RequestHandler = async (req, res) => {
     !requireText(body.stateProvince) ||
     !requireText(body.postalCode) ||
     !requireText(body.country) ||
+    !requireText(body.bankName) ||
     body.confirmation !== true
   ) {
     res.status(400).json({
@@ -71,7 +80,34 @@ export const createPaymentRequest: RequestHandler = async (req, res) => {
     return;
   }
 
-  const device = vendorDevices.find((item) => item.id === body.deviceId);
+  let device: PaymentDeviceSnapshot | undefined = vendorDevices.find(
+    (item) => item.id === body.deviceId,
+  );
+
+  if (!device) {
+    const { data: databaseDevice, error: deviceError } = await authenticatedSupabase
+      .from("devices")
+      .select("id, name, model, amount")
+      .eq("id", body.deviceId)
+      .eq("status", "Available")
+      .maybeSingle();
+
+    if (deviceError) {
+      res.status(500).json({ error: "Unable to verify the selected device." });
+      return;
+    }
+
+    if (databaseDevice) {
+      device = {
+        id: databaseDevice.id,
+        name: databaseDevice.name,
+        model: databaseDevice.model,
+        price: databaseDevice.amount,
+        currency: "USD",
+      };
+    }
+  }
+
   if (!device) {
     res.status(400).json({ error: "The selected device is not available." });
     return;
@@ -90,6 +126,9 @@ export const createPaymentRequest: RequestHandler = async (req, res) => {
       state_province: body.stateProvince.trim(),
       postal_code: body.postalCode.trim(),
       country: body.country.trim(),
+      bank_name: body.bankName.trim(),
+      additional_notes: body.additionalNotes?.trim() ?? "",
+      confirmation: body.confirmation,
       device_id: device.id,
       device_name: device.name,
       device_model: device.model,
@@ -99,7 +138,7 @@ export const createPaymentRequest: RequestHandler = async (req, res) => {
       status: "Pending Review",
     })
     .select(
-      "id, user_id, full_legal_name, email, phone, delivery_address, city, state_province, postal_code, country, device_id, device_name, device_model, device_amount, currency, vendor, status, created_at",
+      "id, user_id, full_legal_name, email, phone, delivery_address, city, state_province, postal_code, country, bank_name, additional_notes, confirmation, device_id, device_name, device_model, device_amount, currency, vendor, status, created_at",
     )
     .single();
 
@@ -119,6 +158,9 @@ export const createPaymentRequest: RequestHandler = async (req, res) => {
     stateProvince: data.state_province,
     postalCode: data.postal_code,
     country: data.country,
+    bankName: data.bank_name,
+    additionalNotes: data.additional_notes,
+    confirmation: data.confirmation,
     deviceId: data.device_id,
     deviceName: data.device_name,
     deviceModel: data.device_model,
@@ -138,7 +180,7 @@ export const listPaymentRequests: RequestHandler = async (req, res) => {
   const query = authenticatedSupabase
     .from("payment_requests")
     .select(
-      "id, user_id, full_legal_name, email, phone, delivery_address, city, state_province, postal_code, country, device_id, device_name, device_model, device_amount, currency, vendor, status, created_at",
+      "id, user_id, full_legal_name, email, phone, delivery_address, city, state_province, postal_code, country, bank_name, additional_notes, confirmation, device_id, device_name, device_model, device_amount, currency, vendor, status, created_at",
     )
     .order("created_at", { ascending: false });
   const { data, error } = isAdmin(user)
@@ -162,6 +204,9 @@ export const listPaymentRequests: RequestHandler = async (req, res) => {
       stateProvince: request.state_province,
       postalCode: request.postal_code,
       country: request.country,
+      bankName: request.bank_name,
+      additionalNotes: request.additional_notes,
+      confirmation: request.confirmation,
       deviceId: request.device_id,
       deviceName: request.device_name,
       deviceModel: request.device_model,

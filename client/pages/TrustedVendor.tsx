@@ -49,21 +49,14 @@ function getAvailableDeviceImage(imagePath: string | null) {
   return publicUrl || neutralDevicePlaceholder;
 }
 
-async function listAvailableDevices(): Promise<VendorDevice[]> {
-  const { data, error } = await supabase
-    .from("devices")
-    .select("id,name,model,specifications,amount,status,image_url")
-    .eq("status", "Available");
+const availableDeviceFields = "id,name,model,specifications,amount,status,image_url";
 
-  if (error) throw error;
-
-  return ((data ?? []) as AvailableDeviceRecord[]).map((device) => ({
+function mapAvailableDevice(device: AvailableDeviceRecord): VendorDevice {
+  return {
     id: device.id,
     name: device.name,
     model: device.model,
-
     image: getAvailableDeviceImage(device.image_url),
-
     imageAlt: `${device.name} device`,
     price: device.amount,
     currency: "USD",
@@ -76,7 +69,33 @@ async function listAvailableDevices(): Promise<VendorDevice[]> {
     description: device.specifications,
     features: [device.specifications],
     category: "Laptop",
-  }));
+  };
+}
+
+export async function listAvailableDevices(): Promise<VendorDevice[]> {
+  const { data, error } = await supabase
+    .from("devices")
+    .select(availableDeviceFields)
+    .eq("status", "Available");
+
+  if (error) throw error;
+
+  return ((data ?? []) as AvailableDeviceRecord[]).map(mapAvailableDevice);
+}
+
+export async function getAvailableDeviceById(
+  id: string,
+): Promise<VendorDevice | null> {
+  const { data, error } = await supabase
+    .from("devices")
+    .select(availableDeviceFields)
+    .eq("id", id)
+    .eq("status", "Available")
+    .maybeSingle();
+
+  if (error) throw error;
+
+  return data ? mapAvailableDevice(data as AvailableDeviceRecord) : null;
 }
 
 const authenticatedNavItems = [
