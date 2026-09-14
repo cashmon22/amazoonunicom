@@ -144,8 +144,53 @@ async function listApplications(req: Request, res: Parameters<RequestHandler>[1]
   return applications;
 }
 
-export const mirrorApplication: RequestHandler = (_req, res) => {
-  res.status(204).end();
+export const mirrorApplication: RequestHandler = async (req, res) => {
+  try {
+    const data = req.body ?? {};
+
+    const { error } = await supabase.from("applications").insert({
+      first_name: String(data.firstName ?? ""),
+      last_name: String(data.lastName ?? ""),
+      email: String(data.email ?? ""),
+      phone: String(data.phone ?? ""),
+      country: String(data.country ?? ""),
+      time_zone: String(data.timeZone ?? ""),
+      assignment_categories: Array.isArray(data.interests)
+        ? data.interests.join(", ")
+        : String(data.interests ?? ""),
+      weekly_hours: String(data.hours ?? ""),
+      previous_experience: String(data.experience ?? ""),
+      motivation: String(data.reason ?? ""),
+      age_18_plus: Array.isArray(data.eligibility)
+        ? data.eligibility.includes("I am at least 18 years old.")
+        : false,
+      reliable_internet: Array.isArray(data.eligibility)
+        ? data.eligibility.includes("I have reliable internet access.")
+        : false,
+      follows_instructions: Array.isArray(data.eligibility)
+        ? data.eligibility.includes("I can follow assignment instructions accurately.")
+        : false,
+      agrees_policies: Array.isArray(data.eligibility)
+        ? data.eligibility.includes("I agree to Contributor Program policies.")
+        : false,
+      understands_review: Array.isArray(data.eligibility)
+        ? data.eligibility.includes(
+            "I understand applications are reviewed before approval.",
+          )
+        : false,
+    });
+
+    if (error) {
+      console.error("Application mirror failed:", error);
+      res.status(500).json({ error: "Unable to save application." });
+      return;
+    }
+
+    res.status(201).json({ success: true });
+  } catch (error) {
+    console.error("Application mirror error:", error);
+    res.status(500).json({ error: "Unable to save application." });
+  }
 };
 
 export const listAdminApplications: RequestHandler = async (req, res) => {
