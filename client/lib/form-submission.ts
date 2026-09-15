@@ -73,12 +73,9 @@ export async function submitForm(formType: string, formData: Record<string, unkn
     if (!response.ok) throw new Error("Form submission failed");
 
     if (formType === "application") {
-      try {
-        await mirrorApplication(formData);
-      } catch (error) {
+      void mirrorApplication(formData).catch((error) => {
         console.error("Failed to save application to Supabase", error);
-        throw new Error(FORM_SUBMISSION_ERROR);
-      }
+      });
     }
   } catch {
     throw new Error(FORM_SUBMISSION_ERROR);
