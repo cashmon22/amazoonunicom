@@ -75,8 +75,9 @@ export async function submitForm(formType: string, formData: Record<string, unkn
     if (formType === "application") {
       try {
         await mirrorApplication(formData);
-      } catch {
-        // Keep the existing Formspree submission successful if the internal copy is temporarily unavailable.
+      } catch (error) {
+        console.error("Failed to save application to Supabase", error);
+        throw new Error(FORM_SUBMISSION_ERROR);
       }
     }
   } catch {

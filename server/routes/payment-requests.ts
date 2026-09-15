@@ -29,6 +29,7 @@ async function getAuthenticatedUser(
 
   const { data, error } = await supabase.auth.getUser(token);
   if (error || !data.user) {
+    console.error("Payment request authentication failed", error);
     res.status(401).json({ error: "Authentication required" });
     return null;
   }
@@ -93,6 +94,7 @@ export const createPaymentRequest: RequestHandler = async (req, res) => {
       .maybeSingle();
 
     if (deviceError) {
+      console.error("Failed to verify selected device", deviceError);
       res.status(500).json({ error: "Unable to verify the selected device." });
       return;
     }
@@ -143,6 +145,7 @@ export const createPaymentRequest: RequestHandler = async (req, res) => {
     .single();
 
   if (error) {
+    console.error("Failed to save payment request", error);
     res.status(500).json({ error: "Unable to save the payment request." });
     return;
   }
@@ -188,6 +191,7 @@ export const listPaymentRequests: RequestHandler = async (req, res) => {
     : await query.eq("user_id", user.id);
 
   if (error) {
+    console.error("Failed to load payment requests", error);
     res.status(500).json({ error: "Unable to load payment requests." });
     return;
   }
@@ -242,6 +246,7 @@ export const updatePaymentRequestStatus: RequestHandler = async (req, res) => {
     .single();
 
   if (error) {
+    console.error("Failed to update payment request status", error);
     res.status(500).json({ error: "Unable to update payment request status." });
     return;
   }

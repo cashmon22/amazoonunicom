@@ -28,8 +28,8 @@ import { listPaymentRequests, updatePaymentRequestStatus } from "@/lib/payment-r
 import type { PaymentRequest, PaymentRequestStatus } from "@shared/payment-requests";
 
 const deviceStatuses = ["Available", "Unavailable", "Reserved"];
-const adminRequestStatuses = ["Under Review", "Approved", "Rejected"] as const;
-type AdminRequestStatus = (typeof adminRequestStatuses)[number];
+const adminRequestStatuses: PaymentRequestStatus[] = ["Pending Review", "Approved", "Rejected", "Completed"];
+type AdminRequestStatus = PaymentRequestStatus;
 
 type DeviceForm = {
   name: string;
@@ -75,11 +75,7 @@ function requestAddress(request: PaymentRequest) {
 }
 
 function requestAdminStatus(status: PaymentRequestStatus): AdminRequestStatus {
-  return status === "Approved" || status === "Rejected" ? status : "Under Review";
-}
-
-function storedRequestStatus(status: AdminRequestStatus): PaymentRequestStatus {
-  return status === "Under Review" ? "Pending Review" : status;
+  return status;
 }
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
@@ -252,10 +248,9 @@ export default function AdminDevices() {
     setUpdatingRequestId(request.id);
     setRequestError("");
     try {
-      const storedStatus = storedRequestStatus(status);
-      await updatePaymentRequestStatus(request.id, storedStatus);
-      setRequests((current) => current.map((item) => item.id === request.id ? { ...item, status: storedStatus } : item));
-      setSelectedRequest((current) => current?.id === request.id ? { ...current, status: storedStatus } : current);
+      await updatePaymentRequestStatus(request.id, status);
+      setRequests((current) => current.map((item) => item.id === request.id ? { ...item, status } : item));
+      setSelectedRequest((current) => current?.id === request.id ? { ...current, status } : current);
     } catch (statusError) {
       setRequestError(statusError instanceof Error ? statusError.message : "Unable to update request status.");
     } finally {
@@ -276,7 +271,7 @@ export default function AdminDevices() {
 
       <div className="mt-8 grid gap-4 sm:grid-cols-3">
         <SummaryCard label="Inventory devices" value={isLoading ? "—" : devices.length} detail="Records in public.devices" icon={Monitor} />
-        <SummaryCard label="Requests to review" value={isRequestsLoading ? "—" : requests.filter((request) => requestAdminStatus(request.status) === "Under Review").length} detail="Awaiting an admin decision" icon={Clock3} />
+        <SummaryCard label="Requests to review" value={isRequestsLoading ? "—" : requests.filter((request) => request.status === "Pending Review").length} detail="Awaiting an admin decision" icon={Clock3} />
         <SummaryCard label="Approved requests" value={isRequestsLoading ? "—" : requests.filter((request) => request.status === "Approved").length} detail="Current request status" icon={Check} />
       </div>
 
