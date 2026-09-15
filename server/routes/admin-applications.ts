@@ -104,16 +104,9 @@ function getServiceRoleClient(
 }
 
 async function getAdminUser(
-  req: Request,
+  token: string,
   res: Parameters<RequestHandler>[1],
 ): Promise<User | null> {
-  const token = req.headers.authorization?.match(/^Bearer\s+(.+)$/i)?.[1];
-
-  if (!token) {
-    res.status(401).json({ error: "Authentication required" });
-    return null;
-  }
-
   const { data, error } = await supabase.auth.getUser(token);
 
   if (error || !data.user) {
@@ -133,11 +126,18 @@ async function requireAdmin(
   req: Request,
   res: Parameters<RequestHandler>[1],
 ) {
-  const admin = await getAdminUser(req, res);
+  const token = req.headers.authorization?.match(/^Bearer\s+(.+)$/i)?.[1];
+  if (!token) {
+    res.status(401).json({ error: "Authentication required" });
+    return null;
+  }
+
+  const admin = await getAdminUser(token, res);
   if (!admin) return null;
 
   const serviceSupabase = getServiceRoleClient(res);
   if (!serviceSupabase) return null;
+  if (!admin) return null;
 
   return { admin, serviceSupabase };
 }
