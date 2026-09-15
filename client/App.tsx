@@ -20,8 +20,7 @@ import TrustedVendor from "./pages/TrustedVendor";
 import PaymentRequest from "./pages/PaymentRequest";
 import PaymentInstructions from "./pages/PaymentInstructions";
 import PaymentRequests from "./pages/PaymentRequests";
-import AdminPaymentRequests from "./pages/AdminPaymentRequests";
-import AdminPanel, { AdminDashboard, AdminPlaceholder } from "./pages/AdminPanel";
+import AdminPanel, { AdminDashboard } from "./pages/AdminPanel";
 import AdminUsers from "./pages/AdminUsers";
 import AdminApplications from "./pages/AdminApplications";
 import AdminDevices from "./pages/AdminDevices";
@@ -86,7 +85,6 @@ const App = () => (
             <Route path="/trusted-vendor/request-payment" element={<PaymentRequest />} />
             <Route path="/trusted-vendor/payment-instructions" element={<PaymentInstructions />} />
             <Route path="/trusted-vendor/requests" element={<PaymentRequests />} />
-            <Route path="/admin/payment-requests" element={<AdminPaymentRequests />} />
             <Route path="/admin" element={<AdminPanel />}>
               <Route index element={<AdminDashboard />} />
               <Route path="users" element={<AdminUsers />} />
