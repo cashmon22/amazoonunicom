@@ -1,6 +1,9 @@
 import { createHash } from "node:crypto";
 import type { Request, RequestHandler } from "express";
-import { supabase } from "../lib/supabase";
+import {
+  supabase,
+  createServiceRoleSupabaseClient,
+} from "../lib/supabase";
 import type { AdminApplication, AdminApplicationStatus } from "../../shared/admin-applications";
 
 const allowedStatuses: AdminApplicationStatus[] = ["Under Review", "Approved", "Rejected"];
