@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
     auth: { persistSession: false, autoRefreshToken: false },
   });
   const [applications, deviceRequests] = await Promise.all([
-    serviceClient.from("applications").select("application_id", { count: "exact", head: true }),
+    serviceClient.from("applications").select("id", { count: "exact", head: true }),
     serviceClient.from("payment_requests").select("id", { count: "exact", head: true }),
   ]);
   if (applications.error || deviceRequests.error) {
