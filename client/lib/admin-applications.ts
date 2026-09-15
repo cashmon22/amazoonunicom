@@ -62,7 +62,10 @@ export async function listAdminApplications(search: string, status: AdminApplica
     .from("applications")
     .select("*")
     .order("created_at", { ascending: false });
-  if (error) throw new Error("Unable to load applications.");
+  if (error) {
+    console.error("Failed to load applications from Supabase", error);
+    throw new Error("Unable to load applications.");
+  }
 
   const applications = (data ?? [])
     .map((row) => rowToApplication(row as Record<string, unknown>))
@@ -73,7 +76,10 @@ export async function listAdminApplications(search: string, status: AdminApplica
 
 export async function getAdminApplicationDetails(id: string) {
   const { data, error } = await supabase.from("applications").select("*").eq("id", id).single();
-  if (error || !data) throw new Error("Unable to load application details.");
+  if (error || !data) {
+    console.error("Failed to load application details from Supabase", error);
+    throw new Error("Unable to load application details.");
+  }
   return rowToApplication(data as Record<string, unknown>);
 }
 
@@ -84,6 +90,9 @@ export async function updateAdminApplicationStatus(id: string, status: AdminAppl
     .eq("id", id)
     .select("id, status")
     .single();
-  if (error || !data) throw new Error("Unable to update application status.");
+  if (error || !data) {
+    console.error("Failed to update application status in Supabase", error);
+    throw new Error("Unable to update application status.");
+  }
   return data as { id: string; status: AdminApplicationStatus };
 }

@@ -91,7 +91,7 @@ const App = () => (
               <Route index element={<AdminDashboard />} />
               <Route path="users" element={<AdminUsers />} />
               <Route path="applications" element={<AdminApplications />} />
-              <Route path="device-requests" element={<AdminPlaceholder section="device-requests" />} />
+              <Route path="device-requests" element={<AdminDevices />} />
               <Route path="devices" element={<AdminDevices />} />
             </Route>
           </Route>
