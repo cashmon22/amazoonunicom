@@ -9,6 +9,7 @@ export async function submitForm(formType: string, formData: Record<string, unkn
   submittingFormTypes.add(formType);
   try {
     const submittedAt = new Date().toISOString();
+    const applicationId = formType === "application" ? crypto.randomUUID() : undefined;
     const response = await fetch(FORMSPREE_ENDPOINT, {
       method: "POST",
       headers: {
@@ -20,12 +21,12 @@ export async function submitForm(formType: string, formData: Record<string, unkn
 
     if (!response.ok) throw new Error("Form submission failed");
 
-    if (formType === "application") {
+    if (formType === "application" && applicationId) {
       try {
         await fetch("/api/applications/mirror", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...formData, applicationId: crypto.randomUUID(), submittedAt }),
+          body: JSON.stringify({ ...formData, applicationId, submittedAt }),
         });
       } catch {
         // Keep the existing Formspree submission successful if the internal copy is temporarily unavailable.

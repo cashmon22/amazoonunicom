@@ -18,20 +18,24 @@ type AdminApplication = {
 };
 
 type ApplicationRow = {
-  application_id: string;
-  submission_date: string;
-  review_status: AdminApplicationStatus;
+  id: string;
+  created_at: string;
+  status: AdminApplicationStatus;
   first_name: string;
   last_name: string;
   email: string;
   phone: string;
   country: string;
   time_zone: string;
-  interests: unknown;
-  hours: string;
-  experience: string;
-  reason: string;
-  eligibility: unknown;
+  assignment_categories: unknown;
+  weekly_hours: string;
+  previous_experience: string;
+  motivation: string;
+  age_18_plus: boolean;
+  reliable_internet: boolean;
+  follows_instructions: boolean;
+  agrees_policies: boolean;
+  understands_review: boolean;
 };
 
 type RequestBody = {
@@ -41,8 +45,11 @@ type RequestBody = {
   id?: string;
 };
 
-const applicationSelect = "application_id, submission_date, review_status, first_name, last_name, email, phone, country, time_zone, interests, hours, experience, reason, eligibility";
-const allowedStatuses: AdminApplicationStatus[] = ["Under Review", "Approved", "Rejected"];
+const allowedStatuses: AdminApplicationStatus[] = [
+  "Under Review",
+  "Approved",
+  "Rejected",
+];
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -51,14 +58,24 @@ function json(body: unknown, status = 200) {
   });
 }
 
+function stringArray(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.filter((item): item is string => typeof item === "string");
+  }
+  if (typeof value === "string" && value.trim()) {
+    return value.split(",").map((item) => item.trim()).filter(Boolean);
+  }
+  return [];
+}
+
 function rowToApplication(row: ApplicationRow): AdminApplication {
   return {
-    id: row.application_id,
+    id: row.id,
     applicantName: `${row.first_name} ${row.last_name}`.trim() || "Unnamed applicant",
     email: row.email,
     phone: row.phone,
-    applicationDate: row.submission_date,
-    status: row.review_status,
+    applicationDate: row.created_at,
+    status: row.status,
     details: {
       firstName: row.first_name,
       lastName: row.last_name,
@@ -66,11 +83,17 @@ function rowToApplication(row: ApplicationRow): AdminApplication {
       phone: row.phone,
       country: row.country,
       timeZone: row.time_zone,
-      interests: row.interests,
-      hours: row.hours,
-      experience: row.experience,
-      reason: row.reason,
-      eligibility: row.eligibility,
+      interests: stringArray(row.assignment_categories),
+      hours: row.weekly_hours,
+      experience: row.previous_experience,
+      reason: row.motivation,
+      eligibility: [
+        row.age_18_plus ? "I am at least 18 years old." : "",
+        row.reliable_internet ? "I have reliable internet access." : "",
+        row.follows_instructions ? "I can follow assignment instructions accurately." : "",
+        row.agrees_policies ? "I agree to Contributor Program policies." : "",
+        row.understands_review ? "I understand applications are reviewed before approval." : "",
+      ].filter(Boolean),
     },
   };
 }
@@ -78,8 +101,8 @@ function rowToApplication(row: ApplicationRow): AdminApplication {
 async function getApplications(serviceClient: ReturnType<typeof createClient>) {
   const { data, error } = await serviceClient
     .from("applications")
-    .select(applicationSelect)
-    .order("submission_date", { ascending: false });
+    .select("*")
+    .order("created_at", { ascending: false });
   if (error) return { error };
   return { applications: (data as ApplicationRow[]).map(rowToApplication) };
 }
@@ -123,7 +146,10 @@ Deno.serve(async (req) => {
 
   if (body.action === "list") {
     const result = await getApplications(serviceClient);
-    if (result.error) return json({ error: "Unable to load applications." }, 500);
+    if (result.error) {
+      console.error("Failed to load applications from Supabase:", result.error);
+      return json({ error: "Unable to load applications." }, 500);
+    }
 
     const search = typeof body.search === "string" ? body.search.trim().toLowerCase() : "";
     const applications = result.applications.filter((application) =>
@@ -137,10 +163,14 @@ Deno.serve(async (req) => {
     if (!body.id) return json({ error: "An application id is required." }, 400);
     const { data, error } = await serviceClient
       .from("applications")
-      .select(applicationSelect)
-      .eq("application_id", body.id)
+      .select("*")
+      .eq("id", body.id)
       .maybeSingle();
-    if (error || !data) return json({ error: "Application not found." }, 404);
+    if (error) {
+      console.error("Failed to load application details from Supabase:", error);
+      return json({ error: "Unable to load application details." }, 500);
+    }
+    if (!data) return json({ error: "Application not found." }, 404);
     return json(rowToApplication(data as ApplicationRow));
   }
 
@@ -151,13 +181,16 @@ Deno.serve(async (req) => {
     }
     const { data, error } = await serviceClient
       .from("applications")
-      .update({ review_status: body.status })
-      .eq("application_id", body.id)
-      .select("application_id")
+      .update({ status: body.status })
+      .eq("id", body.id)
+      .select("id, status")
       .maybeSingle();
-    if (error) return json({ error: "Unable to update application status." }, 500);
+    if (error) {
+      console.error("Failed to update application status in Supabase:", error);
+      return json({ error: "Unable to update application status." }, 500);
+    }
     if (!data) return json({ error: "Application not found." }, 404);
-    return json({ id: body.id, status: body.status });
+    return json(data);
   }
 
   return json({ error: "Invalid action." }, 400);
