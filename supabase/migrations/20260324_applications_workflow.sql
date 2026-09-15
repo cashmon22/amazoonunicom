@@ -27,23 +27,22 @@ revoke all on public.applications from anon;
 
 drop policy if exists "Admins can view applications" on public.applications;
 drop policy if exists "Admins can update applications" on public.applications;
+drop policy if exists "Anyone can submit applications" on public.applications;
+
+grant insert on public.applications to anon, authenticated;
+
+create policy "Anyone can submit applications"
+  on public.applications for insert
+  to anon, authenticated
+  with check (true);
 
 create policy "Admins can view applications"
   on public.applications for select
   to authenticated
-  using (
-    (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
-    or (auth.jwt() -> 'user_metadata' ->> 'role') = 'admin'
-  );
+  using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
 
 create policy "Admins can update applications"
   on public.applications for update
   to authenticated
-  using (
-    (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
-    or (auth.jwt() -> 'user_metadata' ->> 'role') = 'admin'
-  )
-  with check (
-    (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
-    or (auth.jwt() -> 'user_metadata' ->> 'role') = 'admin'
-  );
+  using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin')
+  with check ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
