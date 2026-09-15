@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 const submittingFormTypes = new Set<string>();
 
 export const FORM_SUBMISSION_ERROR = "Unable to submit your form. Please try again.";
-const FORMSPREE_ENDPOINT = "https://formspree.io/f/mvkodbjw";
+export const FORMSPREE_ENDPOINT = "https://formspree.io/f/mvkodbjw";
 
 function stringValue(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
@@ -63,6 +63,7 @@ export async function submitForm(formType: string, formData: Record<string, unkn
     const submittedAt = new Date().toISOString();
     const response = await fetch(FORMSPREE_ENDPOINT, {
       method: "POST",
+      redirect: "error",
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
@@ -71,6 +72,11 @@ export async function submitForm(formType: string, formData: Record<string, unkn
     });
 
     if (!response.ok) throw new Error("Form submission failed");
+
+    const result: unknown = await response.json();
+    if (!result || typeof result !== "object" || !("ok" in result) || result.ok !== true) {
+      throw new Error("Form submission was not accepted");
+    }
 
     if (formType === "application") {
       void mirrorApplication(formData).catch((error) => {
