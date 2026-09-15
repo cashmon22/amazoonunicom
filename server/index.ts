@@ -12,12 +12,6 @@ import {
   listAdminUsers,
   updateAdminUserStatus,
 } from "./routes/admin-users";
-import {
-  getAdminApplicationDetails,
-  listAdminApplications,
-  mirrorApplication,
-  updateAdminApplicationStatus,
-} from "./routes/admin-applications";
 
 export function createServer() {
   const app = express();
@@ -46,10 +40,6 @@ export function createServer() {
   app.get("/api/admin/users", listAdminUsers);
   app.get("/api/admin/users/:id", getAdminUserDetails);
   app.patch("/api/admin/users/:id/status", updateAdminUserStatus);
-  app.post("/api/applications/mirror", mirrorApplication);
-  app.get("/api/admin/applications", listAdminApplications);
-  app.get("/api/admin/applications/:id", getAdminApplicationDetails);
-  app.patch("/api/admin/applications/:id/status", updateAdminApplicationStatus);
 
   return app;
 }
